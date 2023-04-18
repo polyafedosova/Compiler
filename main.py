@@ -29,6 +29,17 @@ def main():
         } 
     }
     ''')
+    prog = mel_parser.parse('''
+        class Main { 
+            public int main(int a, int b) { 
+                int c = 0;
+                c = c + 1;
+            }
+            public int main2(int a) { 
+                int c = 0; 
+            } 
+        }
+    ''')
     print(*prog.tree, sep=os.linesep)
 
 

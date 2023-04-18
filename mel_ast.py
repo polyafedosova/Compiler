@@ -257,42 +257,33 @@ class StaticMod(Enum):
     STATIC = 'static'
 
 
-class MethodDeclNode(StmtNode):
-    def __init__(self, access_mod: AccessMod, type_: DeclType):
-        super().__init__()
-        self.access_mod = access_mod
-        self.type_ = type_
-
-    def __str__(self) -> str:
-        return str(self.access_mod.value) + ' ' + str(self.type_.value)
-
-
 class MethodNode(StmtNode):
-    def __init__(self, decl: MethodDeclNode, name: IdentNode, param: Optional[ParamDeclNode] = None,
-                 stmt: Optional[StmtNode] = None):
+    def __init__(self, name: IdentNode, type: DeclType, access: AccessMod, params: tuple[ParamDeclNode] = None,
+                 body: Optional[StmtNode] = None):
         super().__init__()
-        self.decl = decl
         self.name = name
-        self.param = param
-        self.stmt = stmt
+        self.type = type
+        self.access = access
+        self.params = params
+        self.body = body
 
     @property
     def childs(self) -> tuple[ParamDeclNode, ...] | tuple[ParamDeclNode | StmtNode, ...]:
-        return ((self.param,) if self.param else tuple()) + ((self.stmt,) if self.stmt else tuple())
+        return *self.params, self.body
 
     def __str__(self) -> str:
-        return self.decl.__str__() + ' ' + str(self.name)
+        return f'{self.access.value} {self.type.value} {self.name}'
 
 
 class ClassNode(StmtNode):
-    def __init__(self, name: IdentNode, stmt: Optional[StmtNode] = None):
+    def __init__(self, name: IdentNode, *methods: MethodNode):
         super().__init__()
         self.name = name
-        self.stmt = stmt
+        self.methods = methods
 
     @property
     def childs(self) -> tuple[IdentNode, ...] | tuple[IdentNode | StmtNode, ...]:
-        return (self.name,) + ((self.stmt,) if self.stmt else tuple())
+        return self.methods
 
     def __str__(self) -> str:
-        return 'class'
+        return f'class {self.name}'

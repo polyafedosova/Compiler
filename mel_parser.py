@@ -19,6 +19,7 @@ def _make_parser():
     TYPE = pp.oneOf('int double string bool char float void')
     END = pp.Literal(';').suppress()
     DOT = pp.Literal('.').suppress()
+    COMMA = pp.Literal(',').suppress()
     # типы данных
     # INT = pp.Keyword('int')
     # DOUBLE = pp.Keyword('double')
@@ -57,14 +58,14 @@ def _make_parser():
     while_ = pp.Keyword("while").suppress() + LPAR + expr + RPAR + stmt
     for_ = pp.Keyword("for").suppress() + LPAR + assign + add + END + add + RPAR + stmt
 
-    methodDecl = ACCESS_MOD + TYPE
-    method_ = methodDecl + ident + \
-              LPAR + pp.Optional(paramDecl_ + pp.ZeroOrMore(',' + paramDecl_)) + RPAR + \
-              stmt
-    class_ = pp.Keyword("class").suppress() + ident + stmt
+    method = ACCESS_MOD + TYPE + ident + \
+             LPAR + pp.Optional(paramDecl_ + pp.ZeroOrMore(COMMA + paramDecl_)) + RPAR + \
+             stmt
+    class_ = pp.Keyword("class").suppress() + ident + LBRACE + pp.ZeroOrMore(method) + RBRACE
 
-    stmt << (assign | paramDecl_ | console_ | if_ | while_ | for_ | method_ | class_ | return_ | LBRACE + pp.ZeroOrMore(stmt) + RBRACE)
-    stmt_list = pp.ZeroOrMore(stmt)
+    stmt_list = pp.Forward()
+    stmt << (assign | paramDecl_ | console_ | if_ | while_ | for_ | class_ | return_ | LBRACE + stmt_list + RBRACE)
+    stmt_list << pp.ZeroOrMore(stmt)
     program = stmt_list.ignore(pp.cStyleComment).ignore(pp.dblSlashComment) + pp.StringEnd()
 
     start = program
@@ -86,9 +87,10 @@ def _make_parser():
                 return node
 
             parser.setParseAction(type_parse_action)
-        if rule_name in 'methodDecl':
+        if rule_name in 'method':
             def method_parse_action(s, loc, tocs):
-                node = MethodDeclNode(AccessMod(tocs[0]), DeclType(tocs[1]))
+                params = tocs[3:-1]
+                node = MethodNode(tocs[2], DeclType(tocs[1]), AccessMod(tocs[0]), params, tocs[-1])
                 return node
 
             parser.setParseAction(method_parse_action)
